@@ -1,4 +1,4 @@
-import { autoResizeTextarea } from '../utils/textareaUtils.js';
+import { autoResizeTextarea } from './textareaUtils.js';
 
 export class Editor {
   constructor(noteManager, history) {
