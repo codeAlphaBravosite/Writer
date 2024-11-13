@@ -1,8 +1,8 @@
-import { Editor } from './components/Editor.js';
-import { NotesList } from './components/NotesList.js';
-import { Note } from './models/Note.js';
-import { StorageService } from './services/StorageService.js';
-import { HistoryManager } from './services/HistoryManager.js';
+import { Editor } from './Editor.js';
+import { NotesList } from './NotesList.js';
+import { Note } from './Note.js';
+import { StorageService } from './StorageService.js';
+import { HistoryManager } from './HistoryManager.js';
 
 class App {
   constructor() {
