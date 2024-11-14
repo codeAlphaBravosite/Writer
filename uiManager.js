@@ -343,34 +343,87 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
-
+  
   autoResizeTextarea(textarea) {
-    const editorContent = document.querySelector('.editor-content');
-    const scrollTop = editorContent.scrollTop;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    
-    const caretPosition = textarea.getBoundingClientRect();
-    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
-
-    textarea.style.height = 'auto';
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
-
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
-
-    const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
-
-    if (currentCaretY > viewportHeight - buffer) {
-      editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
-      });
-    } else {
-      editorContent.scrollTop = scrollTop;
-    }
+  const editorContent = document.querySelector('.editor-content');
+  const scrollTop = editorContent.scrollTop;
+  const selectionStart = textarea.selectionStart;
+  const selectionEnd = textarea.selectionEnd;
+  
+  // Get caret position before resize
+  const caretPosition = getCaretCoordinates(textarea);
+  
+  // Perform resize
+  textarea.style.height = 'auto';
+  const newHeight = textarea.scrollHeight;
+  textarea.style.height = newHeight + 'px';
+  
+  // Restore selection
+  textarea.selectionStart = selectionStart;
+  textarea.selectionEnd = selectionEnd;
+  
+  // Handle scrolling
+  const viewportHeight = window.innerHeight;
+  const buffer = 150;
+  
+  if (caretPosition.y > viewportHeight - buffer) {
+    editorContent.scrollTo({
+      top: caretPosition.y - viewportHeight + buffer,
+      behavior: 'smooth'
+    });
+  } else {
+    editorContent.scrollTop = scrollTop;
   }
-        }
+}
+
+/**
+ * Get precise caret coordinates
+ * @param {HTMLTextAreaElement} textarea - The textarea element
+ * @returns {{x: number, y: number}} Caret coordinates
+ */
+function getCaretCoordinates(textarea) {
+  const position = textarea.selectionEnd;
+  const { offsetLeft, offsetTop, value } = textarea;
+  
+  // Create mirror div for measurement
+  const mirror = document.createElement('div');
+  mirror.style.cssText = getComputedStyle(textarea).cssText;
+  mirror.style.height = 'auto';
+  mirror.style.width = textarea.offsetWidth + 'px';
+  mirror.style.position = 'absolute';
+  mirror.style.left = '-9999px';
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.wordWrap = 'break-word';
+  mirror.style.visibility = 'hidden';
+  
+  // Split content at cursor position
+  const textBeforeCaret = value.substring(0, position);
+  const textAfterCaret = value.substring(position);
+  
+  mirror.textContent = textBeforeCaret;
+  const marker = document.createElement('span');
+  marker.textContent = '|';
+  mirror.appendChild(marker);
+  mirror.appendChild(document.createTextNode(textAfterCaret));
+  
+  document.body.appendChild(mirror);
+  const coordinates = {
+    x: marker.offsetLeft + offsetLeft,
+    y: marker.offsetTop + offsetTop
+  };
+  document.body.removeChild(mirror);
+  
+  return coordinates;
+}
+
+// Initialize auto-resize
+document.addEventListener('DOMContentLoaded', () => {
+  const textarea = document.querySelector('.editor-content textarea');
+  if (textarea) {
+    textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+    // Initial resize
+    autoResizeTextarea(textarea);
+  }
+});
+
+}
