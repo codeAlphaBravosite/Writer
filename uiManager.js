@@ -367,4 +367,4 @@ export class UIManager {
         textarea.selectionStart = selectionStart;
         textarea.selectionEnd = selectionEnd;
 }
-}
+}}
