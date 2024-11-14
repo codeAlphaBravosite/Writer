@@ -98,7 +98,6 @@ export class UIManager {
       clearTimeout(this.autoSaveTimeout);
     }
     
-    // Store the current state before making changes
     const previousState = JSON.parse(JSON.stringify(this.currentNote));
     
     if (e.target === this.noteTitle) {
@@ -106,7 +105,6 @@ export class UIManager {
     }
     
     this.autoSaveTimeout = setTimeout(() => {
-      // Only push to history if there are actual changes
       if (JSON.stringify(previousState) !== JSON.stringify(this.currentNote)) {
         this.history.push(previousState);
         this.noteManager.updateNote(this.currentNote);
@@ -115,26 +113,22 @@ export class UIManager {
   }
 
   handleUndo() {
-    // Save scroll position and active toggle before undo
     this.saveEditorState();
-    
     const previousState = this.history.undo(this.currentNote);
     if (previousState) {
       this.currentNote = previousState;
       this.noteManager.updateNote(this.currentNote);
-      this.renderEditor(true); // Pass true to indicate this is an undo/redo operation
+      this.renderEditor(true);
     }
   }
 
   handleRedo() {
-    // Save scroll position and active toggle before redo
     this.saveEditorState();
-    
     const nextState = this.history.redo(this.currentNote);
     if (nextState) {
       this.currentNote = nextState;
       this.noteManager.updateNote(this.currentNote);
-      this.renderEditor(true); // Pass true to indicate this is an undo/redo operation
+      this.renderEditor(true);
     }
   }
 
@@ -144,7 +138,6 @@ export class UIManager {
       this.lastKnownScrollPosition = editorContent.scrollTop;
     }
     
-    // Save the active element and its caret position
     const activeElement = document.activeElement;
     if (activeElement && activeElement.tagName === 'TEXTAREA') {
       this.lastCaretPosition = {
@@ -166,7 +159,6 @@ export class UIManager {
       editorContent.scrollTop = this.lastKnownScrollPosition;
     }
 
-    // Restore focus and caret position
     if (this.lastActiveToggleId) {
       const toggleElement = document.querySelector(`[data-toggle-id="${this.lastActiveToggleId}"]`);
       const textarea = toggleElement?.closest('.toggle-section')?.querySelector('textarea');
@@ -179,7 +171,6 @@ export class UIManager {
             this.lastCaretPosition.end
           );
         } else {
-          // If no caret position saved, move to end
           const length = textarea.value.length;
           textarea.setSelectionRange(length, length);
         }
@@ -272,7 +263,6 @@ export class UIManager {
   renderEditor(isUndoRedo = false) {
     if (!this.currentNote) return;
 
-    // Store the current state if this is not an undo/redo operation
     if (!isUndoRedo) {
       this.saveEditorState();
     }
@@ -300,9 +290,7 @@ export class UIManager {
 
     this.attachToggleEventListeners();
 
-    // Restore the state after rendering
     if (isUndoRedo) {
-      // Use requestAnimationFrame to ensure DOM is updated before restoring state
       requestAnimationFrame(() => {
         this.restoreEditorState();
       });
@@ -345,49 +333,41 @@ export class UIManager {
   }
 
   autoResizeTextarea(textarea) {
-    // Store the textarea's current scroll position and selection
+    // Store the current scroll position of the editor content
     const editorContent = document.querySelector('.editor-content');
-    const currentScrollTop = editorContent.scrollTop;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-
-    // Calculate the cursor's position relative to the viewport before resize
-    const textareaRect = textarea.getBoundingClientRect();
-    const cursorY = window.innerHeight - (textareaRect.bottom - textarea.scrollTop + 
-      (textarea.scrollHeight * (selectionEnd / textarea.value.length)));
-
-    // Resize the textarea
+    
+    // Get the relative caret position before resize
+    const caretPercentage = textarea.selectionEnd / textarea.value.length;
+    
+    // Get the current line height to calculate approximate caret position
+    const computedStyle = window.getComputedStyle(textarea);
+    const lineHeight = parseInt(computedStyle.lineHeight) || 16;
+    
+    // Calculate approximate line number of caret
+    const lines = textarea.value.substr(0, textarea.selectionEnd).split('\n').length;
+    const approximateCaretY = lines * lineHeight;
+    
+    // Adjust height
     textarea.style.height = 'auto';
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
-
-    // Restore the selection
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
-
-    // Get the new position of the cursor
-    const newTextareaRect = textarea.getBoundingClientRect();
-    const newCursorY = window.innerHeight - (newTextareaRect.bottom - textarea.scrollTop + 
-      (textarea.scrollHeight * (selectionEnd / textarea.value.length)));
-
-    // Calculate how much we need to scroll to keep the cursor in the same relative position
-    const scrollAdjustment = newCursorY - cursorY;
-
-    // Only scroll if we're near the bottom of the viewport
+    textarea.style.height = textarea.scrollHeight + 'px';
+    
+    // Get the viewport height and textarea's position relative to viewport
     const viewportHeight = window.innerHeight;
-    const cursorThreshold = viewportHeight * 0.7; // Adjust this value to change when scrolling occurs
-    const cursorBottomPosition = newTextareaRect.top + 
-      (textarea.scrollHeight * (selectionEnd / textarea.value.length));
-
-    if (cursorBottomPosition > cursorThreshold) {
-      // Smooth scroll to keep cursor in view
-      editorContent.scrollTo({
-        top: currentScrollTop + scrollAdjustment,
-        behavior: 'instant' // Using 'instant' instead of 'smooth' to prevent jarring
+    const textareaRect = textarea.getBoundingClientRect();
+    const textareaTop = textareaRect.top;
+    
+    // Calculate if caret would be out of view
+    const caretY = textareaTop + approximateCaretY;
+    const buffer = viewportHeight * 0.3; // 30% of viewport height as buffer
+    
+    // Only scroll if caret would be too close to bottom of viewport
+    if (caretY > viewportHeight - buffer) {
+      // Calculate how much we need to scroll to keep caret in view with buffer
+      const scrollNeeded = caretY - (viewportHeight - buffer);
+      editorContent.scrollBy({
+        top: scrollNeeded,
+        behavior: 'instant' // Use instant instead of smooth for better UX while typing
       });
-    } else {
-      // Maintain the current scroll position if cursor is not near bottom
-      editorContent.scrollTop = currentScrollTop;
     }
   }
-                                                    }
+                          }
