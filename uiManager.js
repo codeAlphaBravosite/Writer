@@ -346,7 +346,7 @@ export class UIManager {
   
   autoResizeTextarea(textarea) {
     // Save the current caret (cursor) position
-    const cursorPosition = textarea.selectionStart;
+    const cursorPosition = textarea.selectionEnd;
 
     // Set the height to 'auto' to shrink/expand according to content
     textarea.style.height = 'auto'; 
