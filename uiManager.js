@@ -345,21 +345,22 @@ export class UIManager {
   }
   
   autoResizeTextarea(textarea) {
-    // Save the initial scroll position before resizing
-    const previousScrollTop = textarea.scrollTop;
-    const previousScrollHeight = textarea.scrollHeight;
+    // Save the current caret position and scroll position before resizing
+    const cursorPosition = textarea.selectionStart;
 
-    // Expand the textarea height to fit content naturally
+    // Set height to 'auto' to calculate natural height
     textarea.style.height = 'auto';
+    const previousHeight = textarea.scrollHeight;
+    
+    // Adjust the height to fit the content
     textarea.style.height = `${textarea.scrollHeight}px`;
 
-    // Check if a new line has been created (content expanded)
-    if (textarea.scrollHeight > previousScrollHeight) {
-        // Only scroll to the bottom to bring the new line into view if text expanded
-        textarea.scrollTop = textarea.scrollHeight;
-    } else {
-        // Restore the previous scroll position if no new lines were added
-        textarea.scrollTop = previousScrollTop;
+    // Check if the content expanded (new line created)
+    if (textarea.scrollHeight > previousHeight) {
+        // Scroll to the cursor position only if a new line is added
+        const cursorOffset = textarea.selectionStart * 2; // Approximate pixel offset for the caret
+        textarea.scrollTop = cursorOffset;
     }
-}
+    // Else, allow the user to scroll manually
+  }
 }
