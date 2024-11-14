@@ -309,7 +309,7 @@ export class UIManager {
     }
   }
 
-  attachToggleEventListeners() {
+    attachToggleEventListeners() {
     document.querySelectorAll('.toggle-header').forEach(header => {
       header.addEventListener('click', (e) => {
         if (!e.target.classList.contains('toggle-title')) {
@@ -329,38 +329,29 @@ export class UIManager {
       let resizeTimeout;
       textarea.addEventListener('input', (e) => {
         this.updateToggleContent(parseInt(e.target.dataset.toggleId), e.target.value);
-        
+
+        // Capture the cursor position to prevent unwanted scrolling
+        const cursorPosition = textarea.selectionStart;
+
         if (resizeTimeout) {
           cancelAnimationFrame(resizeTimeout);
         }
         
         resizeTimeout = requestAnimationFrame(() => {
           this.autoResizeTextarea(textarea);
+
+          // Restore cursor position and ensure it stays in view
+          textarea.setSelectionRange(cursorPosition, cursorPosition);
+          textarea.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
         });
       });
 
-      // Initial resize
       this.autoResizeTextarea(textarea);
     });
   }
-  
-  autoResizeTextarea(textarea) {
-    // Save the current scroll position and caret position
-    const cursorPosition = textarea.selectionStart;
-    const scrollTop = textarea.scrollTop;
 
-    // Reset height to calculate new scrollHeight
+  autoResizeTextarea(textarea) {
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
-
-    // Restore scroll position to keep the cursor in view
-    textarea.scrollTop = scrollTop;
-
-    // Adjust if cursor is out of view after resize
-    const cursorOffset = textarea.getBoundingClientRect().top + cursorPosition;
-    const viewportHeight = window.innerHeight;
-    if (cursorOffset > viewportHeight) {
-        textarea.scrollTop = cursorOffset - viewportHeight / 2;
-    }
   }
-  }
+}
