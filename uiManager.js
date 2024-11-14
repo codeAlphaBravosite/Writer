@@ -344,33 +344,17 @@ export class UIManager {
     });
   }
 
-  autoResizeTextarea(textarea) {
-    const editorContent = document.querySelector('.editor-content');
-    const scrollTop = editorContent.scrollTop;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    
-    const caretPosition = textarea.getBoundingClientRect();
-    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
+autoResizeTextarea(textarea) {
+    // Save the current scroll position within the textarea
+    const currentScrollPosition = textarea.scrollTop;
 
+    // Set height to 'auto' to calculate the natural height of the content
     textarea.style.height = 'auto';
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
 
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
+    // Adjust height based on the scrollHeight to fit the content
+    textarea.style.height = textarea.scrollHeight + 'px';
 
-    const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
-
-    if (currentCaretY > viewportHeight - buffer) {
-      editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
-      });
-    } else {
-      editorContent.scrollTop = scrollTop;
-    }
-  }
-        }
+    // Restore the scroll position to where it was before resizing
+    textarea.scrollTop = currentScrollPosition;
+}
+}
