@@ -344,33 +344,69 @@ export class UIManager {
     });
   }
 
-  autoResizeTextarea(textarea) {
-    const editorContent = document.querySelector('.editor-content');
-    const scrollTop = editorContent.scrollTop;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
+  // Save this in the same JavaScript file where your original code was
+
+class TextareaManager {
+  constructor(textarea) {
+    this.textarea = textarea;
+    this.editorContent = document.querySelector('.editor-content');
+    this.setupEvents();
+  }
+
+  setupEvents() {
+    // Handle input changes
+    this.textarea.addEventListener('input', () => this.autoResizeTextarea());
     
-    const caretPosition = textarea.getBoundingClientRect();
-    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
+    // Handle focus
+    this.textarea.addEventListener('focus', () => this.autoResizeTextarea());
+  }
 
-    textarea.style.height = 'auto';
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
+  autoResizeTextarea() {
+    try {
+      if (!this.editorContent || !this.textarea) {
+        return;
+      }
 
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
+      // Store current values
+      const scrollTop = this.editorContent.scrollTop;
+      const { selectionStart, selectionEnd } = this.textarea;
 
-    const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+      // Resize textarea
+      this.textarea.style.height = 'auto';
+      const newHeight = Math.min(this.textarea.scrollHeight, 500); // 500px max height
+      this.textarea.style.height = `${newHeight}px`;
 
-    if (currentCaretY > viewportHeight - buffer) {
-      editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
-      });
-    } else {
-      editorContent.scrollTop = scrollTop;
+      // Add scrolling if needed
+      this.textarea.style.overflowY = this.textarea.scrollHeight > 500 ? 'auto' : 'hidden';
+
+      // Restore selection
+      this.textarea.selectionStart = selectionStart;
+      this.textarea.selectionEnd = selectionEnd;
+
+      // Handle scrolling
+      const viewportHeight = window.innerHeight;
+      const textareaRect = this.textarea.getBoundingClientRect();
+      const buffer = 150;
+
+      if (textareaRect.bottom > viewportHeight - buffer) {
+        window.scrollTo({
+          top: window.pageYOffset + (textareaRect.bottom - (viewportHeight - buffer)),
+          behavior: 'smooth'
+        });
+      } else {
+        this.editorContent.scrollTop = scrollTop;
+      }
+
+    } catch (error) {
+      console.error('Error in autoResizeTextarea:', error);
     }
   }
-        }
+}
+
+// Step 2: Add this code to initialize it
+document.addEventListener('DOMContentLoaded', () => {
+  const textarea = document.querySelector('textarea'); // Replace with your textarea selector if different
+  if (textarea) {
+    new TextareaManager(textarea);
+  }
+});
