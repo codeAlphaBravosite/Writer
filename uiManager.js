@@ -344,10 +344,8 @@ export class UIManager {
     });
   }
 
-function autoResizeTextarea(textarea) {
-    // Set height to 'auto' to calculate the natural height of the content
+autoResizeTextarea(textarea) {
     textarea.style.height = 'auto';
-    
-    // Adjust height based on the scrollHeight to fit the content
     textarea.style.height = textarea.scrollHeight + 'px';
+  }
 }
