@@ -366,5 +366,4 @@ export class UIManager {
         // Restore the caret position to prevent jumping
         textarea.selectionStart = selectionStart;
         textarea.selectionEnd = selectionEnd;
-}
-}}
+    }
