@@ -346,7 +346,7 @@ h1 {
   }
   
   .toggle-content textarea {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     padding: 1.25rem;
     padding-bottom: 5rem;
   }
@@ -390,7 +390,7 @@ h1 {
   }
   
   input, textarea {
-    font-size: 18px !important;
+    font-size: 20px !important;
   }
   }
 
