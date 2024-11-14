@@ -344,33 +344,41 @@ export class UIManager {
     });
   }
 
-  autoResizeTextarea(textarea) {
-    const editorContent = document.querySelector('.editor-content');
-    const scrollTop = editorContent.scrollTop;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    
-    const caretPosition = textarea.getBoundingClientRect();
-    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
+autoResizeTextarea(textarea) {
+  // First, store the current editor's scroll position
+  const editorContent = document.querySelector('.editor-content');
+  const initialScrollTop = editorContent.scrollTop;
 
-    textarea.style.height = 'auto';
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
+  // Preserve caret position
+  const selectionStart = textarea.selectionStart;
+  const selectionEnd = textarea.selectionEnd;
 
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
+  // Temporarily reset height to ensure proper resizing
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`; // Resize to fit content
 
-    const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+  // Restore caret position to avoid jumpy typing experience
+  textarea.selectionStart = selectionStart;
+  textarea.selectionEnd = selectionEnd;
 
-    if (currentCaretY > viewportHeight - buffer) {
-      editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
-      });
-    } else {
-      editorContent.scrollTop = scrollTop;
-    }
+  // Caret tracking for smoother scrolling, especially on mobile
+  const caretPosition = textarea.getBoundingClientRect();
+  const caretY = caretPosition.top + textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length);
+
+  // Set viewport buffer and target scroll position based on caret position
+  const viewportHeight = window.innerHeight;
+  const buffer = 100; // Adjust buffer as needed
+  const targetScroll = caretY - viewportHeight + buffer;
+
+  if (caretY > viewportHeight - buffer) {
+    // Smooth scroll if caret is outside buffer
+    editorContent.scrollTo({
+      top: targetScroll,
+      behavior: 'smooth'
+    });
+  } else {
+    // Reset to initial scroll if within buffer
+    editorContent.scrollTop = initialScrollTop;
   }
-        }
+}
+}
