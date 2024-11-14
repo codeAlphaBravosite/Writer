@@ -343,9 +343,24 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
+  
+  autoResizeTextarea(textarea) {
+    // Save the current scroll position and caret position
+    const cursorPosition = textarea.selectionStart;
+    const scrollTop = textarea.scrollTop;
 
-autoResizeTextarea(textarea) {
+    // Reset height to calculate new scrollHeight
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
-  }
+
+    // Restore scroll position to keep the cursor in view
+    textarea.scrollTop = scrollTop;
+
+    // Adjust if cursor is out of view after resize
+    const cursorOffset = textarea.getBoundingClientRect().top + cursorPosition;
+    const viewportHeight = window.innerHeight;
+    if (cursorOffset > viewportHeight) {
+        textarea.scrollTop = cursorOffset - viewportHeight / 2;
+    }
 }
+  
