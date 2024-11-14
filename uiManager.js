@@ -409,4 +409,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (textarea) {
     new TextareaManager(textarea);
   }
-});
+});}
