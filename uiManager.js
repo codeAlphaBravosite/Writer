@@ -1,7 +1,7 @@
-import { Editor } from './components/Editor.js';
-import { TogglesManager } from './components/TogglesManager.js';
-import { NotesList } from './components/NotesList.js';
-import { AutoSaveService } from './services/AutoSaveService.js';
+import { Editor } from './Editor.js';
+import { TogglesManager } from './TogglesManager.js';
+import { NotesList } from './NotesList.js';
+import { AutoSaveService } from './AutoSaveService.js';
 
 export class UIManager {
   constructor(noteManager) {
