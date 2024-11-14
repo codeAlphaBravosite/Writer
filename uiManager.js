@@ -1,5 +1,5 @@
 import { HistoryManager } from './history.js';
-import { getCaretCoordinates } from './utils/textareaUtils.js';
+import { getCaretCoordinates } from './textareaUtils.js';
 
 export class UIManager {
   constructor(noteManager) {
