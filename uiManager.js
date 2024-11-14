@@ -369,6 +369,6 @@ export class UIManager {
 
         // Restore the original scroll position to prevent unintended scroll jumps
         editorContent.scrollTop = originalScrollTop;
-    }, 50); // Delay of 50ms
+    }, 100); // Delay of 50ms
 }
 }
