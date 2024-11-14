@@ -343,38 +343,39 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
-  
-  autoResizeTextarea(textarea) {
+
+autoResizeTextarea(textarea) {
   const editorContent = document.querySelector('.editor-content');
+  const scrollTop = editorContent.scrollTop;
+  const selectionStart = textarea.selectionStart;
+  const selectionEnd = textarea.selectionEnd;
+
+  // Reset height to auto to measure the scroll height correctly
+  textarea.style.height = 'auto';
+  const newHeight = textarea.scrollHeight;
+  textarea.style.height = `${newHeight}px`;
+
+  // Restore caret position
+  textarea.selectionStart = selectionStart;
+  textarea.selectionEnd = selectionEnd;
+
+  // Get caret Y position in textarea
+  const caretRect = textarea.getBoundingClientRect();
+  const caretY = caretRect.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
   
-  // Throttle adjustment to prevent continuous reflows
-  let resizeTimeout;
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    
-    // Reset textarea height to auto to correctly calculate new scroll height
-    textarea.style.height = 'auto';
-    const newHeight = `${textarea.scrollHeight}px`;
-    textarea.style.height = newHeight;
+  const viewportHeight = window.innerHeight;
+  const buffer = 100; // Buffer to trigger smooth scroll a bit before caret leaves viewport
+  const caretBelowViewport = caretY > viewportHeight - buffer;
+  const caretAboveViewport = caretY < buffer;
 
-    // Ensure caret is visible within viewport
-    const caretPos = textarea.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const buffer = 80; // Buffer space to ensure caret is visible
-
-    if (caretPos.bottom > viewportHeight - buffer) {
-      // Scroll the editor to bring the caret into view smoothly
-      requestAnimationFrame(() => {
-        editorContent.scrollTo({
-          top: editorContent.scrollTop + caretPos.bottom - viewportHeight + buffer,
-          behavior: 'smooth'
-        });
-      });
-    }
-
-  }, 50); // Adjust timeout as needed for performance
+  // Only smooth scroll if the caret is out of the viewport
+  if (caretBelowViewport || caretAboveViewport) {
+    editorContent.scrollTo({
+      top: caretY - viewportHeight + buffer,
+      behavior: 'smooth',
+    });
+  } else {
+    editorContent.scrollTop = scrollTop;
+  }
 }
-
-// Add event listener for input event on the textarea
-textarea.addEventListener('input', () => autoResizeTextarea(textarea));
 }
