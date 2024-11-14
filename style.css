@@ -287,6 +287,7 @@ h1 {
   resize: none;
   overflow: hidden;
   height: auto;
+  padding-bottom: 2rem;
 }
 
 .toggle-content textarea:focus,
@@ -347,6 +348,7 @@ h1 {
   .toggle-content textarea {
     font-size: 1.4rem;
     padding: 1.25rem;
+    padding-bottom: 2rem;
   }
   
   .toggle-section {
