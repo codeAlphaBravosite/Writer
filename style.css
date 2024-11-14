@@ -393,3 +393,33 @@ h1 {
     font-size: 18px !important;
   }
   }
+
+
+/* Add these at the end of your style.css file */
+
+/* Remove focus outline and tap highlight for all interactive elements */
+input:focus,
+textarea:focus,
+button:focus,
+.toggle-header:focus,
+.toggle-title:focus,
+.note-card:focus,
+.toolbar-btn:focus {
+  outline: none !important;
+  border-color: var(--border-color) !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove tap highlight color for the search container and toggle sections */
+.search-container,
+.toggle-section {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure text selection only in editable areas */
+input, 
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
