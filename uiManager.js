@@ -405,3 +405,5 @@ const debouncedAutoResize = debounce(autoResizeTextarea, 16); // roughly 60fps
 
 // Usage example:
 textarea.addEventListener('input', () => debouncedAutoResize(textarea));
+
+}
