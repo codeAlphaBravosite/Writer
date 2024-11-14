@@ -344,33 +344,26 @@ export class UIManager {
     });
   }
 
-  autoResizeTextarea(textarea) {
-    const editorContent = document.querySelector('.editor-content');
-    const scrollTop = editorContent.scrollTop;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    
-    const caretPosition = textarea.getBoundingClientRect();
-    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
+autoResizeTextarea(textarea) {
+  const editorContent = document.querySelector('.editor-content');
 
-    textarea.style.height = 'auto';
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
+  // Lock the current scroll position of the container
+  const currentScrollTop = editorContent.scrollTop;
 
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
+  // Save caret position in the textarea
+  const selectionStart = textarea.selectionStart;
+  const selectionEnd = textarea.selectionEnd;
 
-    const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+  // Temporarily set height to auto to measure the scroll height correctly
+  textarea.style.height = 'auto';
+  const newHeight = textarea.scrollHeight; // Capture the required height
+  textarea.style.height = `${newHeight}px`; // Set to new height
 
-    if (currentCaretY > viewportHeight - buffer) {
-      editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
-      });
-    } else {
-      editorContent.scrollTop = scrollTop;
-    }
-  }
-        }
+  // Restore caret position to avoid any jumps
+  textarea.selectionStart = selectionStart;
+  textarea.selectionEnd = selectionEnd;
+
+  // Restore the scroll position of the editor container
+  editorContent.scrollTop = currentScrollTop;
+}
+}
