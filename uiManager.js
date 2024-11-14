@@ -345,19 +345,30 @@ export class UIManager {
   }
   
   autoResizeTextarea(textarea) {
-    // Store caret position to prevent jumping when resizing
+    const editorContent = document.querySelector('.editor-content');
+
+    // Lock the scroll position to prevent unintended scrolling
+    const originalScrollTop = editorContent.scrollTop;
+
+    // Save the current caret position
     const selectionStart = textarea.selectionStart;
     const selectionEnd = textarea.selectionEnd;
 
-    // Temporarily set height to 'auto' to get the correct scrollHeight
+    // Temporarily set height to 'auto' to get the natural height of content
     textarea.style.height = 'auto';
 
-    // Set the textarea height to match its content
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = newHeight + 'px';
+    // Use a slight delay to allow for stable layout on mobile before resizing
+    setTimeout(() => {
+        // Resize the textarea to fit its content
+        const newHeight = textarea.scrollHeight;
+        textarea.style.height = newHeight + 'px';
 
-    // Restore caret position
-    textarea.selectionStart = selectionStart;
-    textarea.selectionEnd = selectionEnd;
-  }
+        // Restore the caret position to prevent jumping
+        textarea.selectionStart = selectionStart;
+        textarea.selectionEnd = selectionEnd;
+
+        // Restore the original scroll position to prevent unintended scroll jumps
+        editorContent.scrollTop = originalScrollTop;
+    }, 50); // Delay of 50ms
+}
 }
