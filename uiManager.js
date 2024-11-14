@@ -5,6 +5,8 @@ export class UIManager {
     this.noteManager = noteManager;
     this.currentNote = null;
     this.autoSaveTimeout = null;
+    this.activeTextarea = null;
+    this.resizeObserver = null;
     this.lastKnownScrollPosition = 0;
     this.lastActiveToggleId = null;
     this.lastCaretPosition = null;
@@ -16,6 +18,7 @@ export class UIManager {
 
     this.initializeElements();
     this.attachEventListeners();
+    this.setupResizeObserver();
   }
 
   initializeElements() {
@@ -28,6 +31,17 @@ export class UIManager {
     this.redoButton = document.getElementById('redo-button');
   }
 
+  setupResizeObserver() {
+    this.resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const textarea = entry.target;
+        if (textarea === this.activeTextarea) {
+          this.maintainCaretVisibility(textarea);
+        }
+      }
+    });
+  }
+
   attachEventListeners() {
     document.getElementById('new-note').addEventListener('click', () => this.createNewNote());
     document.getElementById('back-button').addEventListener('click', () => this.closeEditor());
@@ -38,7 +52,6 @@ export class UIManager {
     this.searchInput.addEventListener('input', () => this.filterNotes());
     this.noteTitle.addEventListener('input', (e) => this.handleNoteChange(e));
 
-    // Add keyboard shortcuts for undo/redo
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -50,11 +63,96 @@ export class UIManager {
       }
     });
 
+    window.addEventListener('resize', this.handleWindowResize.bind(this));
+
     window.addEventListener('storage', (e) => {
       if (e.key === 'notes') {
         this.renderNotesList();
       }
     });
+  }
+
+  handleWindowResize() {
+    if (this.activeTextarea) {
+      this.updateTextareaSize(this.activeTextarea);
+    }
+  }
+
+  updateTextareaSize(textarea) {
+    if (!textarea) return;
+
+    const editorContent = textarea.closest('.editor-content');
+    const scrollTop = editorContent.scrollTop;
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+
+    textarea.style.height = 'auto';
+    const newHeight = Math.max(
+      textarea.scrollHeight,
+      parseInt(window.getComputedStyle(textarea).minHeight)
+    );
+    textarea.style.height = `${newHeight}px`;
+
+    editorContent.scrollTop = scrollTop;
+    textarea.setSelectionRange(selectionStart, selectionEnd);
+  }
+
+  maintainCaretVisibility(textarea) {
+    if (!textarea) return;
+
+    const editorContent = textarea.closest('.editor-content');
+    if (!editorContent) return;
+
+    const textareaRect = textarea.getBoundingClientRect();
+    const caretPosition = this.getCaretCoordinates(textarea);
+    if (!caretPosition) return;
+
+    const editorRect = editorContent.getBoundingClientRect();
+    const caretTop = textareaRect.top + caretPosition.top - editorRect.top;
+    const caretBottom = caretTop + caretPosition.height;
+
+    const visibleTop = 100;
+    const visibleBottom = editorRect.height - 150;
+
+    let scrollAdjustment = 0;
+    if (caretTop < visibleTop) {
+      scrollAdjustment = caretTop - visibleTop;
+    } else if (caretBottom > visibleBottom) {
+      scrollAdjustment = caretBottom - visibleBottom;
+    }
+
+    if (scrollAdjustment !== 0) {
+      editorContent.scrollTop += scrollAdjustment;
+    }
+  }
+
+  getCaretCoordinates(textarea) {
+    const position = textarea.selectionEnd;
+    
+    const div = document.createElement('div');
+    div.style.cssText = window.getComputedStyle(textarea).cssText;
+    div.style.height = 'auto';
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordWrap = 'break-word';
+    
+    const textBeforeCaret = textarea.value.substring(0, position);
+    const textAfterCaret = textarea.value.substring(position);
+    
+    div.textContent = textBeforeCaret;
+    const span = document.createElement('span');
+    span.textContent = textAfterCaret || '.';
+    div.appendChild(span);
+    
+    document.body.appendChild(div);
+    const coordinates = {
+      top: span.offsetTop,
+      height: parseInt(window.getComputedStyle(textarea).lineHeight)
+    };
+    document.body.removeChild(div);
+    
+    return coordinates;
   }
 
   initialize() {
@@ -113,7 +211,6 @@ export class UIManager {
   }
 
   handleUndo() {
-    this.saveEditorState();
     const previousState = this.history.undo(this.currentNote);
     if (previousState) {
       this.currentNote = previousState;
@@ -123,58 +220,11 @@ export class UIManager {
   }
 
   handleRedo() {
-    this.saveEditorState();
     const nextState = this.history.redo(this.currentNote);
     if (nextState) {
       this.currentNote = nextState;
       this.noteManager.updateNote(this.currentNote);
       this.renderEditor(true);
-    }
-  }
-
-  saveEditorState() {
-    const editorContent = document.querySelector('.editor-content');
-    if (editorContent) {
-      this.lastKnownScrollPosition = editorContent.scrollTop;
-    }
-    
-    const activeElement = document.activeElement;
-    if (activeElement && activeElement.tagName === 'TEXTAREA') {
-      this.lastCaretPosition = {
-        start: activeElement.selectionStart,
-        end: activeElement.selectionEnd
-      };
-      
-      const toggleSection = activeElement.closest('.toggle-section');
-      if (toggleSection) {
-        const toggleHeader = toggleSection.querySelector('.toggle-header');
-        this.lastActiveToggleId = toggleHeader?.dataset.toggleId;
-      }
-    }
-  }
-
-  restoreEditorState() {
-    const editorContent = document.querySelector('.editor-content');
-    if (editorContent) {
-      editorContent.scrollTop = this.lastKnownScrollPosition;
-    }
-
-    if (this.lastActiveToggleId) {
-      const toggleElement = document.querySelector(`[data-toggle-id="${this.lastActiveToggleId}"]`);
-      const textarea = toggleElement?.closest('.toggle-section')?.querySelector('textarea');
-      if (textarea) {
-        textarea.focus();
-        
-        if (this.lastCaretPosition) {
-          textarea.setSelectionRange(
-            this.lastCaretPosition.start,
-            this.lastCaretPosition.end
-          );
-        } else {
-          const length = textarea.value.length;
-          textarea.setSelectionRange(length, length);
-        }
-      }
     }
   }
 
@@ -260,12 +310,56 @@ export class UIManager {
     });
   }
 
+  attachToggleEventListeners() {
+    document.querySelectorAll('.toggle-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('toggle-title')) {
+          this.toggleSection(parseInt(header.dataset.toggleId));
+        }
+      });
+    });
+
+    document.querySelectorAll('.toggle-title').forEach(input => {
+      input.addEventListener('input', (e) => {
+        this.updateToggleTitle(parseInt(e.target.dataset.toggleId), e.target.value);
+      });
+      input.addEventListener('click', (e) => e.stopPropagation());
+    });
+
+    document.querySelectorAll('textarea').forEach(textarea => {
+      this.resizeObserver?.unobserve(textarea);
+      this.resizeObserver?.observe(textarea);
+
+      textarea.addEventListener('focus', () => {
+        this.activeTextarea = textarea;
+      });
+
+      textarea.addEventListener('blur', () => {
+        if (this.activeTextarea === textarea) {
+          this.activeTextarea = null;
+        }
+      });
+
+      textarea.addEventListener('input', (e) => {
+        this.updateToggleContent(parseInt(e.target.dataset.toggleId), e.target.value);
+        this.updateTextareaSize(textarea);
+      });
+
+      textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          requestAnimationFrame(() => {
+            this.updateTextareaSize(textarea);
+            this.maintainCaretVisibility(textarea);
+          });
+        }
+      });
+
+      this.updateTextareaSize(textarea);
+    });
+  }
+
   renderEditor(isUndoRedo = false) {
     if (!this.currentNote) return;
-
-    if (!isUndoRedo) {
-      this.saveEditorState();
-    }
 
     this.noteTitle.value = this.currentNote.title;
     
@@ -290,84 +384,22 @@ export class UIManager {
 
     this.attachToggleEventListeners();
 
-    if (isUndoRedo) {
+    if (isUndoRedo && this.lastActiveToggleId) {
       requestAnimationFrame(() => {
-        this.restoreEditorState();
+        const textarea = document.querySelector(
+          `.toggle-content textarea[data-toggle-id="${this.lastActiveToggleId}"]`
+        );
+        if (textarea) {
+          textarea.focus();
+          if (this.lastCaretPosition) {
+            textarea.setSelectionRange(
+              this.lastCaretPosition.start,
+              this.lastCaretPosition.end
+            );
+            this.maintainCaretVisibility(textarea);
+          }
+        }
       });
     }
   }
-
-  attachToggleEventListeners() {
-    document.querySelectorAll('.toggle-header').forEach(header => {
-      header.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('toggle-title')) {
-          this.toggleSection(parseInt(header.dataset.toggleId));
-        }
-      });
-    });
-
-    document.querySelectorAll('.toggle-title').forEach(input => {
-      input.addEventListener('input', (e) => {
-        this.updateToggleTitle(parseInt(e.target.dataset.toggleId), e.target.value);
-      });
-      input.addEventListener('click', (e) => e.stopPropagation());
-    });
-
-    document.querySelectorAll('textarea').forEach(textarea => {
-      let resizeTimeout;
-      textarea.addEventListener('input', (e) => {
-        this.updateToggleContent(parseInt(e.target.dataset.toggleId), e.target.value);
-        
-        if (resizeTimeout) {
-          cancelAnimationFrame(resizeTimeout);
-        }
-        
-        resizeTimeout = requestAnimationFrame(() => {
-          this.autoResizeTextarea(textarea);
-        });
-      });
-
-      // Initial resize
-      this.autoResizeTextarea(textarea);
-    });
-  }
-
-  autoResizeTextarea(textarea) {
-    // Store the current scroll position of the editor content
-    const editorContent = document.querySelector('.editor-content');
-    
-    // Get the relative caret position before resize
-    const caretPercentage = textarea.selectionEnd / textarea.value.length;
-    
-    // Get the current line height to calculate approximate caret position
-    const computedStyle = window.getComputedStyle(textarea);
-    const lineHeight = parseInt(computedStyle.lineHeight) || 16;
-    
-    // Calculate approximate line number of caret
-    const lines = textarea.value.substr(0, textarea.selectionEnd).split('\n').length;
-    const approximateCaretY = lines * lineHeight;
-    
-    // Adjust height
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-    
-    // Get the viewport height and textarea's position relative to viewport
-    const viewportHeight = window.innerHeight;
-    const textareaRect = textarea.getBoundingClientRect();
-    const textareaTop = textareaRect.top;
-    
-    // Calculate if caret would be out of view
-    const caretY = textareaTop + approximateCaretY;
-    const buffer = viewportHeight * 0.3; // 30% of viewport height as buffer
-    
-    // Only scroll if caret would be too close to bottom of viewport
-    if (caretY > viewportHeight - buffer) {
-      // Calculate how much we need to scroll to keep caret in view with buffer
-      const scrollNeeded = caretY - (viewportHeight - buffer);
-      editorContent.scrollBy({
-        top: scrollNeeded,
-        behavior: 'instant' // Use instant instead of smooth for better UX while typing
-      });
-    }
-  }
-                          }
+      }
