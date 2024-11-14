@@ -343,42 +343,38 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
-
-autoResizeTextarea(textarea) {
-  // First, store the current editor's scroll position
+  
+  autoResizeTextarea(textarea) {
   const editorContent = document.querySelector('.editor-content');
-  const initialScrollTop = editorContent.scrollTop;
+  
+  // Throttle adjustment to prevent continuous reflows
+  let resizeTimeout;
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    
+    // Reset textarea height to auto to correctly calculate new scroll height
+    textarea.style.height = 'auto';
+    const newHeight = `${textarea.scrollHeight}px`;
+    textarea.style.height = newHeight;
 
-  // Preserve caret position
-  const selectionStart = textarea.selectionStart;
-  const selectionEnd = textarea.selectionEnd;
+    // Ensure caret is visible within viewport
+    const caretPos = textarea.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const buffer = 80; // Buffer space to ensure caret is visible
 
-  // Temporarily reset height to ensure proper resizing
-  textarea.style.height = 'auto';
-  textarea.style.height = `${textarea.scrollHeight}px`; // Resize to fit content
+    if (caretPos.bottom > viewportHeight - buffer) {
+      // Scroll the editor to bring the caret into view smoothly
+      requestAnimationFrame(() => {
+        editorContent.scrollTo({
+          top: editorContent.scrollTop + caretPos.bottom - viewportHeight + buffer,
+          behavior: 'smooth'
+        });
+      });
+    }
 
-  // Restore caret position to avoid jumpy typing experience
-  textarea.selectionStart = selectionStart;
-  textarea.selectionEnd = selectionEnd;
-
-  // Caret tracking for smoother scrolling, especially on mobile
-  const caretPosition = textarea.getBoundingClientRect();
-  const caretY = caretPosition.top + textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length);
-
-  // Set viewport buffer and target scroll position based on caret position
-  const viewportHeight = window.innerHeight;
-  const buffer = 100; // Adjust buffer as needed
-  const targetScroll = caretY - viewportHeight + buffer;
-
-  if (caretY > viewportHeight - buffer) {
-    // Smooth scroll if caret is outside buffer
-    editorContent.scrollTo({
-      top: targetScroll,
-      behavior: 'smooth'
-    });
-  } else {
-    // Reset to initial scroll if within buffer
-    editorContent.scrollTop = initialScrollTop;
-  }
+  }, 50); // Adjust timeout as needed for performance
 }
+
+// Add event listener for input event on the textarea
+textarea.addEventListener('input', () => autoResizeTextarea(textarea));
 }
