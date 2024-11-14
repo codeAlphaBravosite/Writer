@@ -1,4 +1,4 @@
-import { Editor } from './components/Editor.js';
+import { Editor } from './Editor.js';
 
 export class UIManager {
   constructor(noteManager) {
