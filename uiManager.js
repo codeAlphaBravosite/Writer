@@ -366,9 +366,5 @@ export class UIManager {
         // Restore the caret position to prevent jumping
         textarea.selectionStart = selectionStart;
         textarea.selectionEnd = selectionEnd;
-
-        // Restore the original scroll position to prevent unintended scroll jumps
-        editorContent.scrollTop = originalScrollTop;
-    }, 1000); // Delay of 50ms
 }
 }
