@@ -345,32 +345,49 @@ export class UIManager {
   }
 
   autoResizeTextarea(textarea) {
+    // Store the textarea's current scroll position and selection
     const editorContent = document.querySelector('.editor-content');
-    const scrollTop = editorContent.scrollTop;
+    const currentScrollTop = editorContent.scrollTop;
     const selectionStart = textarea.selectionStart;
     const selectionEnd = textarea.selectionEnd;
-    
-    const caretPosition = textarea.getBoundingClientRect();
-    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
 
+    // Calculate the cursor's position relative to the viewport before resize
+    const textareaRect = textarea.getBoundingClientRect();
+    const cursorY = window.innerHeight - (textareaRect.bottom - textarea.scrollTop + 
+      (textarea.scrollHeight * (selectionEnd / textarea.value.length)));
+
+    // Resize the textarea
     textarea.style.height = 'auto';
     const newHeight = textarea.scrollHeight;
     textarea.style.height = newHeight + 'px';
 
+    // Restore the selection
     textarea.selectionStart = selectionStart;
     textarea.selectionEnd = selectionEnd;
 
-    const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+    // Get the new position of the cursor
+    const newTextareaRect = textarea.getBoundingClientRect();
+    const newCursorY = window.innerHeight - (newTextareaRect.bottom - textarea.scrollTop + 
+      (textarea.scrollHeight * (selectionEnd / textarea.value.length)));
 
-    if (currentCaretY > viewportHeight - buffer) {
+    // Calculate how much we need to scroll to keep the cursor in the same relative position
+    const scrollAdjustment = newCursorY - cursorY;
+
+    // Only scroll if we're near the bottom of the viewport
+    const viewportHeight = window.innerHeight;
+    const cursorThreshold = viewportHeight * 0.7; // Adjust this value to change when scrolling occurs
+    const cursorBottomPosition = newTextareaRect.top + 
+      (textarea.scrollHeight * (selectionEnd / textarea.value.length));
+
+    if (cursorBottomPosition > cursorThreshold) {
+      // Smooth scroll to keep cursor in view
       editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
+        top: currentScrollTop + scrollAdjustment,
+        behavior: 'instant' // Using 'instant' instead of 'smooth' to prevent jarring
       });
     } else {
-      editorContent.scrollTop = scrollTop;
+      // Maintain the current scroll position if cursor is not near bottom
+      editorContent.scrollTop = currentScrollTop;
     }
   }
-        }
+                                                    }
