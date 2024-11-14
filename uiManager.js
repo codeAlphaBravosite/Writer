@@ -362,5 +362,5 @@ export class UIManager {
     if (cursorOffset > viewportHeight) {
         textarea.scrollTop = cursorOffset - viewportHeight / 2;
     }
-}
-  
+  }
+  }
