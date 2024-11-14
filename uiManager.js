@@ -343,26 +343,23 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
+  
+  autoResizeTextarea(textarea) {
+    // Save the initial scroll position before resizing
+    const previousScrollTop = textarea.scrollTop;
+    const previousScrollHeight = textarea.scrollHeight;
 
-autoResizeTextarea(textarea) {
-    // Remember the current caret position
-    const cursorPosition = textarea.selectionStart;
-
-    // Set height to 'auto' to calculate natural height
+    // Expand the textarea height to fit content naturally
     textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
 
-    // Set height based on the new content size
-    textarea.style.height = textarea.scrollHeight + 'px';
-
-    // Check if the caret is outside the visible area, and scroll if needed
-    const caretOffset = textarea.offsetTop + textarea.scrollTop + textarea.scrollHeight;
-    const viewportHeight = window.innerHeight;
-
-    // Scroll textarea to show caret if it’s not visible
-    if (caretOffset > viewportHeight) {
-        textarea.scrollTop = caretOffset - viewportHeight / 2;
+    // Check if a new line has been created (content expanded)
+    if (textarea.scrollHeight > previousScrollHeight) {
+        // Only scroll to the bottom to bring the new line into view if text expanded
+        textarea.scrollTop = textarea.scrollHeight;
     } else {
-        textarea.scrollTop = cursorPosition;
+        // Restore the previous scroll position if no new lines were added
+        textarea.scrollTop = previousScrollTop;
     }
 }
 }
