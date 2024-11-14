@@ -345,22 +345,24 @@ export class UIManager {
   }
   
   autoResizeTextarea(textarea) {
-    // Save the current caret position and scroll position before resizing
+    // Save the current caret (cursor) position
     const cursorPosition = textarea.selectionStart;
 
-    // Set height to 'auto' to calculate natural height
-    textarea.style.height = 'auto';
+    // Set the height to 'auto' to shrink/expand according to content
+    textarea.style.height = 'auto'; 
     const previousHeight = textarea.scrollHeight;
-    
-    // Adjust the height to fit the content
+
+    // Adjust the height based on the scrollHeight (the actual content size)
     textarea.style.height = `${textarea.scrollHeight}px`;
 
-    // Check if the content expanded (new line created)
+    // If the content expanded (new line created), adjust the scroll position to keep the cursor visible
     if (textarea.scrollHeight > previousHeight) {
-        // Scroll to the cursor position only if a new line is added
-        const cursorOffset = textarea.selectionStart * 2; // Approximate pixel offset for the caret
+        // Calculate the approximate offset for the caret position
+        const cursorOffset = textarea.scrollHeight - (textarea.scrollHeight - cursorPosition * 2);
+
+        // Scroll to the new caret position, so the caret remains visible
         textarea.scrollTop = cursorOffset;
     }
-    // Else, allow the user to scroll manually
-  }
+    // After resizing, do not scroll automatically anymore
+}
 }
