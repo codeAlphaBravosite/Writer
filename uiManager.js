@@ -343,28 +343,12 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
-  
-  autoResizeTextarea(textarea) {
-    const editorContent = document.querySelector('.editor-content');
 
-    // Lock the scroll position to prevent unintended scrolling
-    const originalScrollTop = editorContent.scrollTop;
-
-    // Save the current caret position
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-
-    // Temporarily set height to 'auto' to get the natural height of content
+function autoResizeTextarea(textarea) {
+    // Set height to 'auto' to calculate the natural height of the content
     textarea.style.height = 'auto';
-
-    // Use a slight delay to allow for stable layout on mobile before resizing
-    setTimeout(() => {
-        // Resize the textarea to fit its content
-        const newHeight = textarea.scrollHeight;
-        textarea.style.height = newHeight + 'px';
-
-        // Restore the caret position to prevent jumping
-        textarea.selectionStart = selectionStart;
-        textarea.selectionEnd = selectionEnd;
-    }
-               }
+    
+    // Adjust height based on the scrollHeight to fit the content
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+  }
