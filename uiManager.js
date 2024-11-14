@@ -5,6 +5,9 @@ export class UIManager {
     this.noteManager = noteManager;
     this.currentNote = null;
     this.autoSaveTimeout = null;
+    this.lastKnownScrollPosition = 0;
+    this.lastActiveToggleId = null;
+    this.lastCaretPosition = null;
     
     this.history = new HistoryManager(({ canUndo, canRedo }) => {
       this.undoButton.disabled = !canUndo;
@@ -34,6 +37,18 @@ export class UIManager {
     this.redoButton.addEventListener('click', () => this.handleRedo());
     this.searchInput.addEventListener('input', () => this.filterNotes());
     this.noteTitle.addEventListener('input', (e) => this.handleNoteChange(e));
+
+    // Add keyboard shortcuts for undo/redo
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.handleRedo();
+        } else {
+          this.handleUndo();
+        }
+      }
+    });
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'notes') {
@@ -83,36 +98,99 @@ export class UIManager {
       clearTimeout(this.autoSaveTimeout);
     }
     
+    // Store the current state before making changes
+    const previousState = JSON.parse(JSON.stringify(this.currentNote));
+    
     if (e.target === this.noteTitle) {
       this.currentNote.title = e.target.value;
     }
     
     this.autoSaveTimeout = setTimeout(() => {
-      this.history.push(this.currentNote);
-      this.noteManager.updateNote(this.currentNote);
+      // Only push to history if there are actual changes
+      if (JSON.stringify(previousState) !== JSON.stringify(this.currentNote)) {
+        this.history.push(previousState);
+        this.noteManager.updateNote(this.currentNote);
+      }
     }, 500);
   }
 
   handleUndo() {
+    // Save scroll position and active toggle before undo
+    this.saveEditorState();
+    
     const previousState = this.history.undo(this.currentNote);
     if (previousState) {
       this.currentNote = previousState;
       this.noteManager.updateNote(this.currentNote);
-      this.renderEditor();
+      this.renderEditor(true); // Pass true to indicate this is an undo/redo operation
     }
   }
 
   handleRedo() {
+    // Save scroll position and active toggle before redo
+    this.saveEditorState();
+    
     const nextState = this.history.redo(this.currentNote);
     if (nextState) {
       this.currentNote = nextState;
       this.noteManager.updateNote(this.currentNote);
-      this.renderEditor();
+      this.renderEditor(true); // Pass true to indicate this is an undo/redo operation
+    }
+  }
+
+  saveEditorState() {
+    const editorContent = document.querySelector('.editor-content');
+    if (editorContent) {
+      this.lastKnownScrollPosition = editorContent.scrollTop;
+    }
+    
+    // Save the active element and its caret position
+    const activeElement = document.activeElement;
+    if (activeElement && activeElement.tagName === 'TEXTAREA') {
+      this.lastCaretPosition = {
+        start: activeElement.selectionStart,
+        end: activeElement.selectionEnd
+      };
+      
+      const toggleSection = activeElement.closest('.toggle-section');
+      if (toggleSection) {
+        const toggleHeader = toggleSection.querySelector('.toggle-header');
+        this.lastActiveToggleId = toggleHeader?.dataset.toggleId;
+      }
+    }
+  }
+
+  restoreEditorState() {
+    const editorContent = document.querySelector('.editor-content');
+    if (editorContent) {
+      editorContent.scrollTop = this.lastKnownScrollPosition;
+    }
+
+    // Restore focus and caret position
+    if (this.lastActiveToggleId) {
+      const toggleElement = document.querySelector(`[data-toggle-id="${this.lastActiveToggleId}"]`);
+      const textarea = toggleElement?.closest('.toggle-section')?.querySelector('textarea');
+      if (textarea) {
+        textarea.focus();
+        
+        if (this.lastCaretPosition) {
+          textarea.setSelectionRange(
+            this.lastCaretPosition.start,
+            this.lastCaretPosition.end
+          );
+        } else {
+          // If no caret position saved, move to end
+          const length = textarea.value.length;
+          textarea.setSelectionRange(length, length);
+        }
+      }
     }
   }
 
   addNewToggle() {
     if (!this.currentNote) return;
+    
+    const previousState = JSON.parse(JSON.stringify(this.currentNote));
     
     const newToggle = {
       id: Date.now(),
@@ -121,8 +199,8 @@ export class UIManager {
       isOpen: true
     };
     
-    this.history.push(this.currentNote);
     this.currentNote.toggles.push(newToggle);
+    this.history.push(previousState);
     this.noteManager.updateNote(this.currentNote);
     this.renderEditor();
   }
@@ -130,29 +208,35 @@ export class UIManager {
   updateToggleTitle(toggleId, newTitle) {
     if (!this.currentNote) return;
     
+    const previousState = JSON.parse(JSON.stringify(this.currentNote));
     const toggle = this.currentNote.toggles.find(t => t.id === toggleId);
     if (toggle) {
       toggle.title = newTitle;
-      this.handleNoteChange({ target: toggle });
+      this.history.push(previousState);
+      this.noteManager.updateNote(this.currentNote);
     }
   }
 
   updateToggleContent(toggleId, newContent) {
     if (!this.currentNote) return;
     
+    const previousState = JSON.parse(JSON.stringify(this.currentNote));
     const toggle = this.currentNote.toggles.find(t => t.id === toggleId);
     if (toggle) {
       toggle.content = newContent;
-      this.handleNoteChange({ target: toggle });
+      this.history.push(previousState);
+      this.noteManager.updateNote(this.currentNote);
     }
   }
 
   toggleSection(toggleId) {
     if (!this.currentNote) return;
     
+    const previousState = JSON.parse(JSON.stringify(this.currentNote));
     const toggle = this.currentNote.toggles.find(t => t.id === toggleId);
     if (toggle) {
       toggle.isOpen = !toggle.isOpen;
+      this.history.push(previousState);
       this.noteManager.updateNote(this.currentNote);
       this.renderEditor();
     }
@@ -185,8 +269,13 @@ export class UIManager {
     });
   }
 
-  renderEditor() {
+  renderEditor(isUndoRedo = false) {
     if (!this.currentNote) return;
+
+    // Store the current state if this is not an undo/redo operation
+    if (!isUndoRedo) {
+      this.saveEditorState();
+    }
 
     this.noteTitle.value = this.currentNote.title;
     
@@ -210,6 +299,14 @@ export class UIManager {
     `).join('');
 
     this.attachToggleEventListeners();
+
+    // Restore the state after rendering
+    if (isUndoRedo) {
+      // Use requestAnimationFrame to ensure DOM is updated before restoring state
+      requestAnimationFrame(() => {
+        this.restoreEditorState();
+      });
+    }
   }
 
   attachToggleEventListeners() {
@@ -229,17 +326,14 @@ export class UIManager {
     });
 
     document.querySelectorAll('textarea').forEach(textarea => {
-      // Add input event listener with debouncing
       let resizeTimeout;
       textarea.addEventListener('input', (e) => {
         this.updateToggleContent(parseInt(e.target.dataset.toggleId), e.target.value);
         
-        // Clear any pending resize
         if (resizeTimeout) {
           cancelAnimationFrame(resizeTimeout);
         }
         
-        // Schedule resize for next frame
         resizeTimeout = requestAnimationFrame(() => {
           this.autoResizeTextarea(textarea);
         });
@@ -251,39 +345,32 @@ export class UIManager {
   }
 
   autoResizeTextarea(textarea) {
-    // Store the current cursor position and scroll position
     const editorContent = document.querySelector('.editor-content');
     const scrollTop = editorContent.scrollTop;
     const selectionStart = textarea.selectionStart;
     const selectionEnd = textarea.selectionEnd;
     
-    // Get the current caret position relative to the viewport
     const caretPosition = textarea.getBoundingClientRect();
     const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
 
-    // Resize the textarea
     textarea.style.height = 'auto';
     const newHeight = textarea.scrollHeight;
     textarea.style.height = newHeight + 'px';
 
-    // Restore cursor position
     textarea.selectionStart = selectionStart;
     textarea.selectionEnd = selectionEnd;
 
-    // Calculate if cursor would be below viewport
     const viewportHeight = window.innerHeight;
-    const buffer = 150; // Buffer space from bottom of viewport
+    const buffer = 150;
     const targetScrollPosition = currentCaretY - viewportHeight + buffer;
 
     if (currentCaretY > viewportHeight - buffer) {
-      // Smooth scroll to keep cursor visible
       editorContent.scrollTo({
         top: targetScrollPosition,
         behavior: 'smooth'
       });
     } else {
-      // Restore original scroll position if cursor is visible
       editorContent.scrollTop = scrollTop;
     }
   }
-}
+        }
