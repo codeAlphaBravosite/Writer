@@ -344,69 +344,64 @@ export class UIManager {
     });
   }
 
-  // Save this in the same JavaScript file where your original code was
-
-class TextareaManager {
-  constructor(textarea) {
-    this.textarea = textarea;
-    this.editorContent = document.querySelector('.editor-content');
-    this.setupEvents();
+function autoResizeTextarea(textarea) {
+  const editorContent = document.querySelector('.editor-content');
+  
+  // Store current selection and scroll position
+  const selectionStart = textarea.selectionStart;
+  const selectionEnd = textarea.selectionEnd;
+  const scrollTop = textarea.scrollTop;
+  
+  // Adjust height
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+  
+  // Restore selection
+  textarea.selectionStart = selectionStart;
+  textarea.selectionEnd = selectionEnd;
+  
+  // Get the current line position
+  const text = textarea.value;
+  const lines = text.substr(0, selectionStart).split('\n');
+  const currentLine = lines.length;
+  const totalLines = text.split('\n').length;
+  
+  // Calculate if we're near the bottom of the content
+  const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+  const visibleLines = Math.floor(textarea.clientHeight / lineHeight);
+  const isNearBottom = currentLine > totalLines - Math.floor(visibleLines / 2);
+  
+  // Only auto-scroll if we're near the bottom of the content
+  if (isNearBottom) {
+    textarea.scrollTop = textarea.scrollHeight;
+  } else {
+    textarea.scrollTop = scrollTop;
   }
-
-  setupEvents() {
-    // Handle input changes
-    this.textarea.addEventListener('input', () => this.autoResizeTextarea());
-    
-    // Handle focus
-    this.textarea.addEventListener('focus', () => this.autoResizeTextarea());
-  }
-
-  autoResizeTextarea() {
-    try {
-      if (!this.editorContent || !this.textarea) {
-        return;
-      }
-
-      // Store current values
-      const scrollTop = this.editorContent.scrollTop;
-      const { selectionStart, selectionEnd } = this.textarea;
-
-      // Resize textarea
-      this.textarea.style.height = 'auto';
-      const newHeight = Math.min(this.textarea.scrollHeight, 500); // 500px max height
-      this.textarea.style.height = `${newHeight}px`;
-
-      // Add scrolling if needed
-      this.textarea.style.overflowY = this.textarea.scrollHeight > 500 ? 'auto' : 'hidden';
-
-      // Restore selection
-      this.textarea.selectionStart = selectionStart;
-      this.textarea.selectionEnd = selectionEnd;
-
-      // Handle scrolling
-      const viewportHeight = window.innerHeight;
-      const textareaRect = this.textarea.getBoundingClientRect();
-      const buffer = 150;
-
-      if (textareaRect.bottom > viewportHeight - buffer) {
-        window.scrollTo({
-          top: window.pageYOffset + (textareaRect.bottom - (viewportHeight - buffer)),
-          behavior: 'smooth'
-        });
-      } else {
-        this.editorContent.scrollTop = scrollTop;
-      }
-
-    } catch (error) {
-      console.error('Error in autoResizeTextarea:', error);
+  
+  // Prevent default scroll behavior of the container
+  editorContent.addEventListener('scroll', (e) => {
+    if (e.target === editorContent) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-  }
+  }, { passive: false });
 }
 
-// Step 2: Add this code to initialize it
-document.addEventListener('DOMContentLoaded', () => {
-  const textarea = document.querySelector('textarea'); // Replace with your textarea selector if different
-  if (textarea) {
-    new TextareaManager(textarea);
-  }
-});}
+// Add a debounced version to improve performance
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Use the debounced version for the input event
+const debouncedAutoResize = debounce(autoResizeTextarea, 16); // roughly 60fps
+
+// Usage example:
+textarea.addEventListener('input', () => debouncedAutoResize(textarea));
