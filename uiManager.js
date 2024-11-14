@@ -310,40 +310,41 @@ export class UIManager {
   }
 
   attachToggleEventListeners() {
-    document.querySelectorAll('.toggle-header').forEach(header => {
-      header.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('toggle-title')) {
-          this.toggleSection(parseInt(header.dataset.toggleId));
-        }
-      });
+  document.querySelectorAll('.toggle-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('toggle-title')) {
+        this.toggleSection(parseInt(header.dataset.toggleId));
+      }
+    });
+  });
+
+  document.querySelectorAll('.toggle-title').forEach(input => {
+    input.addEventListener('input', (e) => {
+      this.updateToggleTitle(parseInt(e.target.dataset.toggleId), e.target.value);
+    });
+    input.addEventListener('click', (e) => e.stopPropagation());
+  });
+
+  document.querySelectorAll('textarea').forEach(textarea => {
+    let resizeTimeout;
+
+    // Debounced input event listener for resizing the textarea smoothly
+    textarea.addEventListener('input', (e) => {
+      this.updateToggleContent(parseInt(e.target.dataset.toggleId), e.target.value);
+      
+      if (resizeTimeout) {
+        cancelAnimationFrame(resizeTimeout);
+      }
+
+      // Use requestAnimationFrame for smooth resizing
+      resizeTimeout = requestAnimationFrame(() => this.autoResizeTextarea(textarea));
     });
 
-    document.querySelectorAll('.toggle-title').forEach(input => {
-      input.addEventListener('input', (e) => {
-        this.updateToggleTitle(parseInt(e.target.dataset.toggleId), e.target.value);
-      });
-      input.addEventListener('click', (e) => e.stopPropagation());
-    });
-
-    document.querySelectorAll('textarea').forEach(textarea => {
-      let resizeTimeout;
-      textarea.addEventListener('input', (e) => {
-        this.updateToggleContent(parseInt(e.target.dataset.toggleId), e.target.value);
-        
-        if (resizeTimeout) {
-          cancelAnimationFrame(resizeTimeout);
-        }
-        
-        resizeTimeout = requestAnimationFrame(() => {
-          this.autoResizeTextarea(textarea);
-        });
-      });
-
-      // Initial resize
-      this.autoResizeTextarea(textarea);
-    });
+    // Initial resize to fit content
+    this.autoResizeTextarea(textarea);
+  });
   }
-
+  
 autoResizeTextarea(textarea) {
   // Save the current caret position
   const selectionStart = textarea.selectionStart;
