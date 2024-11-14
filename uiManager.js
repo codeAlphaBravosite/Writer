@@ -345,37 +345,17 @@ export class UIManager {
   }
 
 autoResizeTextarea(textarea) {
-  const editorContent = document.querySelector('.editor-content');
-  const scrollTop = editorContent.scrollTop;
+  // Save the current caret position
   const selectionStart = textarea.selectionStart;
   const selectionEnd = textarea.selectionEnd;
 
-  // Reset height to auto to measure the scroll height correctly
+  // Reset the height to auto to calculate the correct scroll height
   textarea.style.height = 'auto';
   const newHeight = textarea.scrollHeight;
   textarea.style.height = `${newHeight}px`;
 
-  // Restore caret position
+  // Restore the caret position to avoid any visual jump
   textarea.selectionStart = selectionStart;
   textarea.selectionEnd = selectionEnd;
-
-  // Get caret Y position in textarea
-  const caretRect = textarea.getBoundingClientRect();
-  const caretY = caretRect.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
-  
-  const viewportHeight = window.innerHeight;
-  const buffer = 100; // Buffer to trigger smooth scroll a bit before caret leaves viewport
-  const caretBelowViewport = caretY > viewportHeight - buffer;
-  const caretAboveViewport = caretY < buffer;
-
-  // Only smooth scroll if the caret is out of the viewport
-  if (caretBelowViewport || caretAboveViewport) {
-    editorContent.scrollTo({
-      top: caretY - viewportHeight + buffer,
-      behavior: 'smooth',
-    });
-  } else {
-    editorContent.scrollTop = scrollTop;
-  }
 }
 }
