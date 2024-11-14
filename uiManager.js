@@ -345,16 +345,24 @@ export class UIManager {
   }
 
 autoResizeTextarea(textarea) {
-    // Save the current scroll position within the textarea
-    const currentScrollPosition = textarea.scrollTop;
+    // Remember the current caret position
+    const cursorPosition = textarea.selectionStart;
 
-    // Set height to 'auto' to calculate the natural height of the content
+    // Set height to 'auto' to calculate natural height
     textarea.style.height = 'auto';
 
-    // Adjust height based on the scrollHeight to fit the content
+    // Set height based on the new content size
     textarea.style.height = textarea.scrollHeight + 'px';
 
-    // Restore the scroll position to where it was before resizing
-    textarea.scrollTop = currentScrollPosition;
+    // Check if the caret is outside the visible area, and scroll if needed
+    const caretOffset = textarea.offsetTop + textarea.scrollTop + textarea.scrollHeight;
+    const viewportHeight = window.innerHeight;
+
+    // Scroll textarea to show caret if it’s not visible
+    if (caretOffset > viewportHeight) {
+        textarea.scrollTop = caretOffset - viewportHeight / 2;
+    } else {
+        textarea.scrollTop = cursorPosition;
+    }
 }
 }
