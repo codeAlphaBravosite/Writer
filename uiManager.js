@@ -344,66 +344,33 @@ export class UIManager {
     });
   }
 
-function autoResizeTextarea(textarea) {
-  const editorContent = document.querySelector('.editor-content');
-  
-  // Store current selection and scroll position
-  const selectionStart = textarea.selectionStart;
-  const selectionEnd = textarea.selectionEnd;
-  const scrollTop = textarea.scrollTop;
-  
-  // Adjust height
-  textarea.style.height = 'auto';
-  textarea.style.height = textarea.scrollHeight + 'px';
-  
-  // Restore selection
-  textarea.selectionStart = selectionStart;
-  textarea.selectionEnd = selectionEnd;
-  
-  // Get the current line position
-  const text = textarea.value;
-  const lines = text.substr(0, selectionStart).split('\n');
-  const currentLine = lines.length;
-  const totalLines = text.split('\n').length;
-  
-  // Calculate if we're near the bottom of the content
-  const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
-  const visibleLines = Math.floor(textarea.clientHeight / lineHeight);
-  const isNearBottom = currentLine > totalLines - Math.floor(visibleLines / 2);
-  
-  // Only auto-scroll if we're near the bottom of the content
-  if (isNearBottom) {
-    textarea.scrollTop = textarea.scrollHeight;
-  } else {
-    textarea.scrollTop = scrollTop;
-  }
-  
-  // Prevent default scroll behavior of the container
-  editorContent.addEventListener('scroll', (e) => {
-    if (e.target === editorContent) {
-      e.preventDefault();
-      e.stopPropagation();
+autoResizeTextarea(textarea) {
+    const editorContent = document.querySelector('.editor-content');
+    const scrollTop = editorContent.scrollTop;
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    
+    const caretPosition = textarea.getBoundingClientRect();
+    const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
+
+    textarea.style.height = 'auto';
+    const newHeight = textarea.scrollHeight;
+    textarea.style.height = newHeight + 'px';
+
+    textarea.selectionStart = selectionStart;
+    textarea.selectionEnd = selectionEnd;
+
+    const viewportHeight = window.innerHeight;
+    const buffer = 150;
+    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+
+    if (currentCaretY > viewportHeight - buffer) {
+      editorContent.scrollTo({
+        top: targetScrollPosition,
+        behavior: 'smooth'
+      });
+    } else {
+      editorContent.scrollTop = scrollTop;
     }
-  }, { passive: false });
+  }
 }
-
-// Add a debounced version to improve performance
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-// Use the debounced version for the input event
-const debouncedAutoResize = debounce(autoResizeTextarea, 16); // roughly 60fps
-
-// Usage example:
-textarea.addEventListener('input', () => debouncedAutoResize(textarea));
-
-}}}
