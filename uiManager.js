@@ -351,5 +351,3 @@ function autoResizeTextarea(textarea) {
     // Adjust height based on the scrollHeight to fit the content
     textarea.style.height = textarea.scrollHeight + 'px';
 }
-  }
-}
