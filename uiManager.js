@@ -343,34 +343,41 @@ export class UIManager {
       this.autoResizeTextarea(textarea);
     });
   }
-
-autoResizeTextarea(textarea) {
+  
+  autoResizeTextarea(textarea) {
     const editorContent = document.querySelector('.editor-content');
     const scrollTop = editorContent.scrollTop;
     const selectionStart = textarea.selectionStart;
     const selectionEnd = textarea.selectionEnd;
-    
+
+    // Get the position of the caret within the textarea
     const caretPosition = textarea.getBoundingClientRect();
     const currentCaretY = caretPosition.top + (textarea.scrollHeight * (textarea.selectionEnd / textarea.value.length));
 
+    // Set textarea height to 'auto' to get natural scroll height, then apply this height
     textarea.style.height = 'auto';
     const newHeight = textarea.scrollHeight;
     textarea.style.height = newHeight + 'px';
 
+    // Restore the selection position to keep the caret in place
     textarea.selectionStart = selectionStart;
     textarea.selectionEnd = selectionEnd;
 
+    // Calculate viewport height and apply a dynamic buffer (20% of viewport height)
     const viewportHeight = window.innerHeight;
-    const buffer = 150;
-    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+    const buffer = viewportHeight * 0.2; // Dynamic buffer based on screen height
 
+    // Determine if we need to scroll to keep caret in view
+    const targetScrollPosition = currentCaretY - viewportHeight + buffer;
+    
+    // Only scroll if the caret is close to the bottom of the screen, and smooth scroll to target position
     if (currentCaretY > viewportHeight - buffer) {
-      editorContent.scrollTo({
-        top: targetScrollPosition,
-        behavior: 'smooth'
-      });
+        editorContent.scrollTo({
+            top: targetScrollPosition,
+            behavior: 'smooth'
+        });
     } else {
-      editorContent.scrollTop = scrollTop;
+        editorContent.scrollTop = scrollTop; // Only restore scroll if not needed
     }
-  }
+}
 }
