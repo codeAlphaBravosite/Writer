@@ -115,26 +115,24 @@ export class UIManager {
   }
 
   handleUndo() {
-    // Save scroll position and active toggle before undo
     this.saveEditorState();
     
     const previousState = this.history.undo(this.currentNote);
     if (previousState) {
       this.currentNote = previousState;
       this.noteManager.updateNote(this.currentNote);
-      this.renderEditor(true); // Pass true to indicate this is an undo/redo operation
+      this.renderEditor(true);
     }
   }
 
   handleRedo() {
-    // Save scroll position and active toggle before redo
     this.saveEditorState();
     
     const nextState = this.history.redo(this.currentNote);
     if (nextState) {
       this.currentNote = nextState;
       this.noteManager.updateNote(this.currentNote);
-      this.renderEditor(true); // Pass true to indicate this is an undo/redo operation
+      this.renderEditor(true);
     }
   }
 
@@ -144,7 +142,6 @@ export class UIManager {
       this.lastKnownScrollPosition = editorContent.scrollTop;
     }
     
-    // Save the active element and its caret position
     const activeElement = document.activeElement;
     if (activeElement && activeElement.tagName === 'TEXTAREA') {
       this.lastCaretPosition = {
@@ -166,7 +163,6 @@ export class UIManager {
       editorContent.scrollTop = this.lastKnownScrollPosition;
     }
 
-    // Restore focus and caret position
     if (this.lastActiveToggleId) {
       const toggleElement = document.querySelector(`[data-toggle-id="${this.lastActiveToggleId}"]`);
       const textarea = toggleElement?.closest('.toggle-section')?.querySelector('textarea');
@@ -179,7 +175,6 @@ export class UIManager {
             this.lastCaretPosition.end
           );
         } else {
-          // If no caret position saved, move to end
           const length = textarea.value.length;
           textarea.setSelectionRange(length, length);
         }
@@ -249,16 +244,11 @@ export class UIManager {
 
   renderNotesList(searchTerm = '') {
     const filteredNotes = this.noteManager.getNotes(searchTerm);
+    const notesHtml = filteredNotes.length ? 
+      filteredNotes.map(note => this.createNoteCardHtml(note)).join('') : 
+      '<p class="empty-state">No notes found</p>';
     
-    this.notesList.innerHTML = filteredNotes.length ? filteredNotes.map(note => `
-      <div class="note-card" data-note-id="${note.id}">
-        <h2>${note.title || 'Untitled Note'}</h2>
-        <p>${note.toggles.map(t => t.content).join(' ').slice(0, 150) || 'No content'}</p>
-        <div class="note-meta">
-          Last updated: ${new Date(note.updated).toLocaleDateString()}
-        </div>
-      </div>
-    `).join('') : '<p class="empty-state">No notes found</p>';
+    this.notesList.innerHTML = notesHtml;
 
     document.querySelectorAll('.note-card').forEach(card => {
       card.addEventListener('click', () => {
@@ -269,40 +259,59 @@ export class UIManager {
     });
   }
 
+  createNoteCardHtml(note) {
+    const title = this.escapeHtml(note.title) || 'Untitled Note';
+    const content = this.escapeHtml(note.toggles.map(t => t.content).join(' ').slice(0, 150)) || 'No content';
+    const date = new Date(note.updated).toLocaleDateString();
+    
+    return `
+      <div class="note-card" data-note-id="${note.id}">
+        <h2>${title}</h2>
+        <p>${content}</p>
+        <div class="note-meta">
+          Last updated: ${date}
+        </div>
+      </div>
+    `;
+  }
+
   renderEditor(isUndoRedo = false) {
     if (!this.currentNote) return;
 
-    // Store the current state if this is not an undo/redo operation
     if (!isUndoRedo) {
       this.saveEditorState();
     }
 
-    this.noteTitle.value = this.currentNote.title;
+    this.noteTitle.value = this.escapeHtml(this.currentNote.title);
     
-    this.togglesContainer.innerHTML = this.currentNote.toggles.map(toggle => `
-      <div class="toggle-section">
-        <div class="toggle-header" data-toggle-id="${toggle.id}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-               class="toggle-icon ${toggle.isOpen ? 'open' : ''}">
-            <path d="M9 18l6-6-6-6" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <input type="text" class="toggle-title" value="${toggle.title}"
-                 data-toggle-id="${toggle.id}" />
+    const togglesHtml = this.currentNote.toggles.map(toggle => {
+      const escapedTitle = this.escapeHtml(toggle.title);
+      const escapedContent = this.escapeHtml(toggle.content);
+      
+      return `
+        <div class="toggle-section">
+          <div class="toggle-header" data-toggle-id="${toggle.id}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                 class="toggle-icon ${toggle.isOpen ? 'open' : ''}">
+              <path d="M9 18l6-6-6-6" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input type="text" class="toggle-title" value="${escapedTitle}"
+                   data-toggle-id="${toggle.id}" />
+          </div>
+          <div class="toggle-content ${toggle.isOpen ? 'open' : ''}">
+            <textarea
+              data-toggle-id="${toggle.id}"
+              placeholder="Start writing..."
+            >${escapedContent}</textarea>
+          </div>
         </div>
-        <div class="toggle-content ${toggle.isOpen ? 'open' : ''}">
-          <textarea
-            data-toggle-id="${toggle.id}"
-            placeholder="Start writing..."
-          >${toggle.content}</textarea>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
+    this.togglesContainer.innerHTML = togglesHtml;
     this.attachToggleEventListeners();
 
-    // Restore the state after rendering
     if (isUndoRedo) {
-      // Use requestAnimationFrame to ensure DOM is updated before restoring state
       requestAnimationFrame(() => {
         this.restoreEditorState();
       });
@@ -344,26 +353,37 @@ export class UIManager {
     });
   }
 
-autoResizeTextarea(textarea) {
-  const editorContent = document.querySelector('.editor-content');
+  escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-  // Lock the current scroll position of the container
-  const currentScrollTop = editorContent.scrollTop;
+  autoResizeTextarea(textarea) {
+    if (!textarea) return;
+    
+    const editorContent = document.querySelector('.editor-content');
+    if (!editorContent) return;
 
-  // Save caret position in the textarea
-  const selectionStart = textarea.selectionStart;
-  const selectionEnd = textarea.selectionEnd;
+    const currentScrollTop = editorContent.scrollTop;
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
 
-  // Temporarily set height to auto to measure the scroll height correctly
-  textarea.style.height = 'auto';
-  const newHeight = textarea.scrollHeight; // Capture the required height
-  textarea.style.height = `${newHeight}px`; // Set to new height
+    const currentHeight = textarea.style.height;
+    textarea.style.height = '0';
+    
+    const newHeight = textarea.scrollHeight + 2;
+    textarea.style.height = `${newHeight}px`;
 
-  // Restore caret position to avoid any jumps
-  textarea.selectionStart = selectionStart;
-  textarea.selectionEnd = selectionEnd;
+    if (newHeight <= 0) {
+      textarea.style.height = currentHeight;
+    }
 
-  // Restore the scroll position of the editor container
-  editorContent.scrollTop = currentScrollTop;
-}
-}
+    textarea.setSelectionRange(selectionStart, selectionEnd);
+    editorContent.scrollTop = currentScrollTop;
+  }
+  }
