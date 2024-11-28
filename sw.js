@@ -1,5 +1,5 @@
-const VERSION = '1.0.7';
-const CACHE_NAME = `writer-cache-${VERSION}`;
+const VERSION = '1.0.8';
+const CACHE_NAME = `app2-cache-${VERSION}`;
 
 const STATIC_CACHE_URLS = [
   './',
@@ -22,7 +22,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName.startsWith('writer-cache-') && cacheName !== CACHE_NAME) {
+          if (cacheName.startsWith('app2-cache-') && cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
