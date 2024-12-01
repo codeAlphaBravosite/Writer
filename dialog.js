@@ -12,7 +12,7 @@ export class DialogManager {
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
         display: flex;
         justify-content: center;
         align-items: center;
@@ -26,14 +26,14 @@ export class DialogManager {
       }
 
       .dialog-container {
-        background: white;
+        background: #2c3e50; /* Dark background */
         border-radius: 8px;
         padding: 24px;
         max-width: 400px;
         width: 90%;
         transform: translateY(-20px);
         transition: transform 0.2s ease-in-out;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9); /* Stronger shadow */
       }
 
       .dialog-overlay.visible .dialog-container {
@@ -44,12 +44,12 @@ export class DialogManager {
         font-size: 1.2em;
         font-weight: 600;
         margin: 0 0 12px 0;
-        color: #2c3e50;
+        color: #ecf0f1; /* Light text for dark mode */
       }
 
       .dialog-message {
         margin: 0 0 24px 0;
-        color: #34495e;
+        color: #bdc3c7; /* Subtle light gray text */
         line-height: 1.5;
       }
 
@@ -73,21 +73,21 @@ export class DialogManager {
       }
 
       .dialog-btn-confirm {
-        background-color: #e74c3c;
-        color: white;
+        background-color: #e74c3c; /* Confirm button */
+        color: #ecf0f1; /* Light text */
       }
 
       .dialog-btn-confirm:hover {
-        background-color: #c0392b;
+        background-color: #c0392b; /* Darker red for hover */
       }
 
       .dialog-btn-cancel {
-        background-color: #ecf0f1;
-        color: #2c3e50;
+        background-color: #34495e; /* Dark button */
+        color: #ecf0f1; /* Light text */
       }
 
       .dialog-btn-cancel:hover {
-        background-color: #bdc3c7;
+        background-color: #2c3e50; /* Slightly darker on hover */
       }
     `;
     document.head.appendChild(style);
