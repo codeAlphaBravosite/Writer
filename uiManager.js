@@ -1,4 +1,6 @@
 import { HistoryManager } from './history.js';
+import { DialogManager } from './dialog.js';
+const dialog = new DialogManager();
 
 export class UIManager {
   constructor(noteManager) {
@@ -82,12 +84,19 @@ export class UIManager {
     this.renderNotesList();
   }
 
-  deleteCurrentNote() {
+  async deleteCurrentNote() {
     if (!this.currentNote) return;
-    
-    if (confirm('Are you sure you want to delete this note?')) {
-      this.noteManager.deleteNote(this.currentNote.id);
-      this.closeEditor();
+
+    const confirmed = await dialog.confirm({
+        title: 'Delete Note',
+        message: 'Are you sure?',
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+    });
+
+    if (confirmed) {
+        this.noteManager.deleteNote(this.currentNote.id);
+        this.closeEditor();
     }
   }
 
