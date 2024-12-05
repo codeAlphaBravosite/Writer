@@ -1,7 +1,7 @@
 export class StorageManager {
   // Change 'app1' to 'app2' in the second app's code
   static getAppNamespace() {
-    return 'app2';
+    return 'app1';
   }
 
   static save(key, data) {
