@@ -309,7 +309,7 @@ export class UIManager {
           </div>
           <div class="toggle-content ${toggle.isOpen ? 'open' : ''}">
             <textarea
-              data-toggle-id="${toggle.id}"
+              data-toggle-id="${toggle.id}" spellcheck="false" 
               placeholder="Start writing..."
             >${escapedContent}</textarea>
           </div>
